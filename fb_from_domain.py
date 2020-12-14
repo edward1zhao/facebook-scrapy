@@ -77,5 +77,5 @@ class Scraper:
 
 
 if __name__ == "__main__":
-    # Scraper(input_file="shopify3001.txt", output_file="shopifyrescan.csv", concurrency=10, use_proxy=False).run()
+    #Scraper(input_file="shopify3001.txt", output_file="shopifyrescan.csv", concurrency=10, use_proxy=False).run()
     Scraper(input_file="shopify3001.txt", output_file="fbpagediff.txt", concurrency=10, use_proxy=False).run()
