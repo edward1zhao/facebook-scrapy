@@ -68,13 +68,14 @@ class Scraper:
 
         print("total FB pages found: ", len(self.result))
 
-        df = pd.DataFrame(self.result)
-        df.to_csv(self.output_file, index=False)
+        # df = pd.DataFrame(self.result)
+        # df.to_csv(self.output_file, index=False)
 
-        # with open(self.output_file, 'w', encoding="utf-8") as output:
-        #     for line in self.result:
-        #         output.write(line + "/n")
+        with open(self.output_file, 'w', encoding="utf-8") as output:
+            for line in self.result:
+                output.write(line['url'] + ' ' + line['fb'] + '\n')
 
 
 if __name__ == "__main__":
-    Scraper(input_file="shopify3001.txt", output_file="shopifyrescan.csv", concurrency=10, use_proxy=False).run()
+    # Scraper(input_file="shopify3001.txt", output_file="shopifyrescan.csv", concurrency=10, use_proxy=False).run()
+    Scraper(input_file="shopify3001.txt", output_file="fbpagediff.txt", concurrency=10, use_proxy=False).run()

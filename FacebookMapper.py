@@ -22,8 +22,13 @@ class FacebookMapper:
             return [x for x in f.read().split("\n") if x != ""]
 
     def _records(self):
-        df = pd.read_csv(self.input_file)
-        values = list(zip(df["fb"].values, df["url"].values))
+        # df = pd.read_csv(self.input_file)
+        # values = list(zip(df["fb"].values, df["url"].values))
+        values = []
+        with open(self.input_file, 'r') as input_file:
+            for line in input_file.readlines():
+                values.append(line.split())
+
         for chunk in tqdm(
             [
                 values[i : i + self.batch_size]
@@ -35,8 +40,11 @@ class FacebookMapper:
 
     def dump(self):
         df = pd.DataFrame(self.result)
-        df.to_csv(self.output_file, index=False)
-        print(len(df[df["fb_id"] != "not found"]))
+        # df.to_csv(self.output_file, index=False)
+        with open(self.output_file, 'w') as output:
+            for line in self.result:
+                output.write(line['url'] + ' ' + line['fb'] + ' ' +line['fb_id'] +'\n')
+        print(len(df[df["fb_id"] != "not_found"]))
 
     async def get_id(self, session, x):
         try:
@@ -53,10 +61,10 @@ class FacebookMapper:
                 if id:
                     self.result.append({"fb": fb, "url": url, "fb_id": id[0]})
                 else:
-                    self.result.append({"fb": fb, "url": url, "fb_id": "not found"})
+                    self.result.append({"fb": fb, "url": url, "fb_id": "not_found"})
 
         except Exception as e:
-            self.result.append({"fb": fb, "url": url, "fb_id": "not found"})
+            self.result.append({"fb": fb, "url": url, "fb_id": "not_found"})
 
     async def main(self):
         headers = {
@@ -79,6 +87,9 @@ class FacebookMapper:
 
 
 if __name__ == "__main__":
+    # FacebookMapper(
+    #     input_file="fbpagediff.csv", output_file="outputfbpagediff.csv", use_proxy=True, concurrency=250
+    # ).run()
     FacebookMapper(
-        input_file="fbpagediff.csv", output_file="outputfbpagediff.csv", use_proxy=True, concurrency=250
+        input_file="fbpagediff.txt", output_file="outputfbpagediff.txt", use_proxy=True, concurrency=250
     ).run()
