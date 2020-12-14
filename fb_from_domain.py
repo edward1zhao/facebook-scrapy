@@ -23,6 +23,7 @@ class Scraper:
     async def fetch(self, url, session):
         try:
             proxy = 'http://' + random.choice(self.proxies) if self.use_proxy else None
+            url = 'http://' + url
             async with session.get(url, proxy=proxy) as response:
                 html = await response.text()
                 for link in HTMLParser(html).css("a"):
@@ -36,6 +37,7 @@ class Scraper:
                         break
 
         except Exception:
+            print("error", Exception)
             pass
 
     async def main(self, urls):
@@ -55,19 +57,23 @@ class Scraper:
 
         with open(self.input_file) as f:
             urls = [x for x in f.read().split("\n") if x != ""]
-
+        
         for chunk in tqdm(
-            [urls[x : x + self.size] for x in range(0, len(urls), self.size)]
+            [urls[x : x + self.size] for x in range(0, 1, self.size)]
         ):
             try:
                 loop.run_until_complete(self.main(chunk))
             except Exception:
                 print("Chunk failed")
 
-            print("total FB pages found: ", len(self.result))
+        print("total FB pages found: ", len(self.result))
 
         df = pd.DataFrame(self.result)
-        df.to_csv(self.output_file, encoding="utf-8", index=False)
+        df.to_csv(self.output_file, index=False)
+
+        # with open(self.output_file, 'w', encoding="utf-8") as output:
+        #     for line in self.result:
+        #         output.write(line + "/n")
 
 
 if __name__ == "__main__":
