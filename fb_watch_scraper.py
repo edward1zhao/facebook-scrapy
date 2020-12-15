@@ -17,12 +17,11 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 
-class SearchFaceBookScraper:
+class SearchFaceBookWatchScraper:
   def __init__(self, input_file, output_file, use_proxy, concurrency):
     self.input_file = input_file
     self.output_file = output_file
-    self.result = {}
-    self.exam = []
+    self.result = []
     self.size = concurrency
     self.proxies = self._get_proxies()
     self.use_proxy = use_proxy
@@ -40,25 +39,9 @@ class SearchFaceBookScraper:
 
     chrome = webdriver.Chrome(executable_path="./chromedriver", options=chrome_options)
     chrome.implicitly_wait(2)
-    url = "https://www.social-searcher.com/facebook-search" + "/?q=" + keyword
+    url = "https://www.facebook.com/watch/search" + "/?query=" + keyword
     chrome.get(url)
 
-    chrome.execute_script("window.scrollTo(0, 200)")
-
-    actions = ActionChains(chrome)
-    print(chrome.find_element_by_css_selector('div.gsc-selected-option-container.gsc-inline-block div.gsc-selected-option').text)
-    select_element = chrome.find_element_by_css_selector('div.gsc-selected-option-container.gsc-inline-block')
-
-    actions.click(select_element)
-    actions.perform()
-
-    select_element_in = chrome.find_element_by_css_selector('div.gsc-option-menu :nth-child(2) div.gsc-option')
-    select_element_in.click()
-
-    print(chrome.find_element_by_css_selector('div.gsc-selected-option-container.gsc-inline-block div.gsc-selected-option').text)
-    html = chrome.page_source
-
-    result = set()
     def parse_html(html_source):
       for link in HTMLParser(html_source).css("a"):
         attrs = dd(lambda: None, link.attributes)
@@ -67,22 +50,23 @@ class SearchFaceBookScraper:
           and "http" in attrs["href"]
           and not "?" in attrs["href"]
         ):
-          result.add(attrs["href"])
-          self.exam.append(attrs["href"])
+          self.result.append({"keyword": keyword, "url": attrs["href"]})
     
-    def set_page_number(number):
-      chrome.execute_script("window.scrollTo(0, document.body.scrollHeight - 2200)")
-      element = chrome.find_element_by_xpath("//div[@aria-label='Page " + str(number) + "']")
-      element.click()
-      return chrome.page_source
-
-    self.result.update({keyword: result})
-
-    for i in range(10):
-      if i != 0:
-        parse_html(set_page_number(i + 1))
+    while True:
+      chrome.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+      try:
+        Div = chrome.find_element_by_xpath("//div[@id='browse_end_of_results_footer']/div/div/div//div[@class='phm _64f']").text
+      except:
+        Div = "more result"
+      print(Div)
+      if 'End of Results' == Div:
+        print("the end")
+        break
       else:
-        parse_html(html)
+        continue
+    
+    parse_html(chrome.page_source)
+
     chrome.close()
 
   async def main(self, keywords):
@@ -103,18 +87,16 @@ class SearchFaceBookScraper:
       except Exception:
         print("one failed")
 
-    len_result = sum([len(item) for item in self.result.values()])
-    print("total FB results found: ", len_result)
+    print("total FB results found: ", len(self.result))
 
-    with open(self.output_file, 'w') as output_file:
-      for key in self.result:
-        for item in self.result[key]:
-          output_file.write(key + '<--->' + item + '\n')
+    with open(self.output_file, 'w', encoding="utf-8") as output:
+      for line in self.result:
+        output.write(line['keyword'] + '<--->' + line['url'] + '\n')
 
 if __name__ == "__main__":
-    SearchFaceBookScraper(
-      input_file="keyword.txt",
-      output_file="fb_search_result.txt",
+    SearchFaceBookWatchScraper(
+      input_file="watchkeyword.txt",
+      output_file="fb_watch_result.txt",
       use_proxy=False,
       concurrency=2,
     ).run()
