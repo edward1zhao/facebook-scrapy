@@ -77,7 +77,7 @@ class SearchFaceBookVideoScraper:
             break
         except:
           pass
-        
+
       print(Div)
       if 'End of Results' == Div:
         print("the end")
@@ -90,7 +90,6 @@ class SearchFaceBookVideoScraper:
     chrome.close()
 
   async def main(self, keywords):
-    print(keywords)
     await asyncio.wait([self.process(item) for item in keywords])
 
   def run(self):
