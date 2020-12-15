@@ -58,6 +58,7 @@ class SearchFaceBookWatchScraper:
         Div = chrome.find_element_by_xpath("//div[@id='browse_end_of_results_footer']/div/div/div//div[@class='phm _64f']").text
       except:
         Div = "more result"
+
       print(Div)
       if 'End of Results' == Div:
         print("the end")
@@ -95,7 +96,7 @@ class SearchFaceBookWatchScraper:
 
 if __name__ == "__main__":
     SearchFaceBookWatchScraper(
-      input_file="watchkeyword.txt",
+      input_file="watch_keyword.txt",
       output_file="fb_watch_result.txt",
       use_proxy=False,
       concurrency=2,

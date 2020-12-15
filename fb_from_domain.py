@@ -59,7 +59,7 @@ class Scraper:
             urls = [x for x in f.read().split("\n") if x != ""]
         
         for chunk in tqdm(
-            [urls[x : x + self.size] for x in range(0, 1, self.size)]
+            [urls[x : x + self.size] for x in range(0, len(urls), self.size)]
         ):
             try:
                 loop.run_until_complete(self.main(chunk))

@@ -72,6 +72,12 @@ class SearchFaceBookPostScraper:
         Div = chrome.find_element_by_xpath("//div[@id='browse_end_of_results_footer']/div/div//div[@class='phm _64f']").text
       except:
         Div = "more result"
+        try:
+          if chrome.find_element_by_xpath("//div[@id='u_0_c']/div/div/div/div/div/div/div/div/div").text[:29] == "We couldn't find anything for":
+            break
+        except:
+          pass
+
       print(Div)
       if 'End of Results' == Div:
         print("the end")
