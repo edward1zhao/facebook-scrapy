@@ -22,7 +22,6 @@ class Scraper:
 
     async def fetch(self, url, session):
         try:
-            print("wow")
             proxy = 'http://' + random.choice(self.proxies) if self.use_proxy else None
             url = 'http://' + url
             async with session.get(url, proxy=proxy) as response:
@@ -38,7 +37,6 @@ class Scraper:
                         break
 
         except Exception:
-            print("error", Exception)
             pass
 
     async def main(self, urls):
