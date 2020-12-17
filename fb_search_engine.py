@@ -1,5 +1,6 @@
 import asyncio
-from concurrent.futures.thread import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
+import concurrent.futures
 
 from selenium import webdriver
 import json
@@ -33,76 +34,71 @@ use_proxy = False
 concurrency = 2
 result = {}
 proxies = _get_proxies()
-use_proxy = False
-
-executor = ThreadPoolExecutor(concurrency)
-
-
-def scrape(url, *, loop):
-    loop.run_in_executor(executor, scraper, url)
 
 
 def scraper(keyword):
-    global result
-    proxy = 'http://' + random.choice(proxies) if use_proxy else None
-    chrome_options = webdriver.ChromeOptions()
-    if use_proxy:
-        chrome_options.add_argument('--proxy-server=%s' % proxy)
+    try:
+        global result
+        proxy = 'http://' + random.choice(proxies) if use_proxy else None
+        driver_options = webdriver.FirefoxOptions()
+        if use_proxy:
+            driver_options.add_argument('--proxy-server=%s' % proxy)
 
-    chrome = webdriver.Chrome(
-        executable_path="./chromedriver", options=chrome_options)
-    chrome.implicitly_wait(2)
-    url = "https://www.social-searcher.com/facebook-search" + "/?q=" + keyword
-    chrome.get(url)
+        driver = webdriver.Firefox(executable_path="./geckodriver")
+        driver.implicitly_wait(2)
+        url = "https://www.social-searcher.com/facebook-search" + "/?q=" + keyword
+        driver.get(url)
 
-    chrome.execute_script("window.scrollTo(0, 200)")
+        driver.execute_script("window.scrollTo(0, 200)")
 
-    actions = ActionChains(chrome)
-    print(chrome.find_element_by_css_selector(
-        'div.gsc-selected-option-container.gsc-inline-block div.gsc-selected-option').text)
-    select_element = chrome.find_element_by_css_selector(
-        'div.gsc-selected-option-container.gsc-inline-block')
+        actions = ActionChains(driver)
+        print(driver.find_element_by_css_selector(
+            'div.gsc-selected-option-container.gsc-inline-block div.gsc-selected-option').text)
+        select_element = driver.find_element_by_css_selector(
+            'div.gsc-selected-option-container.gsc-inline-block')
 
-    actions.click(select_element)
-    actions.perform()
+        actions.click(select_element)
+        actions.perform()
 
-    select_element_in = chrome.find_element_by_css_selector(
-        'div.gsc-option-menu :nth-child(2) div.gsc-option')
-    select_element_in.click()
+        select_element_in = driver.find_element_by_css_selector(
+            'div.gsc-option-menu :nth-child(2) div.gsc-option')
+        select_element_in.click()
 
-    print(chrome.find_element_by_css_selector(
-        'div.gsc-selected-option-container.gsc-inline-block div.gsc-selected-option').text)
-    html = chrome.page_source
+        print(driver.find_element_by_css_selector(
+            'div.gsc-selected-option-container.gsc-inline-block div.gsc-selected-option').text)
+        html = driver.page_source
 
-    result_set = set()
+        result_set = set()
 
-    def parse_html(html_source):
-        for link in HTMLParser(html_source).css("a"):
-            attrs = dd(lambda: None, link.attributes)
-            if (
-                attrs["href"]
-                and "http" in attrs["href"]
-                and not "?" in attrs["href"]
-            ):
-                result_set.add(attrs["href"])
+        def parse_html(html_source):
+            for link in HTMLParser(html_source).css("a"):
+                attrs = dd(lambda: None, link.attributes)
+                if (
+                    attrs["href"]
+                    and "http" in attrs["href"]
+                    and not "?" in attrs["href"]
+                ):
+                    result_set.add(attrs["href"])
 
-    def set_page_number(number):
-        chrome.execute_script(
-            "window.scrollTo(0, document.body.scrollHeight - 2000)")
-        element = chrome.find_element_by_xpath(
-            "//div[@aria-label='Page " + str(number) + "']")
-        element.click()
-        return chrome.page_source
+        def set_page_number(number):
+            driver.execute_script(
+                "window.scrollTo(0, document.body.scrollHeight - 2000)")
+            element = driver.find_element_by_xpath(
+                "//div[@aria-label='Page " + str(number) + "']")
+            element.click()
+            return driver.page_source
 
-    result.update({keyword: result_set})
+        result.update({keyword: result_set})
 
-    for i in range(10):
-        if i != 0:
-            parse_html(set_page_number(i + 1))
-        else:
-            parse_html(html)
+        for i in range(10):
+            if i != 0:
+                parse_html(set_page_number(i + 1))
+            else:
+                parse_html(html)
+    except:
+        pass
 
-    chrome.close()
+    driver.close()
 
 
 def last_process():
@@ -113,24 +109,24 @@ def last_process():
     with open(output_file, 'w') as out_file:
         for key in result:
             for item in result[key]:
-                out_file.write(key + '<--->' + item + '\n')
+                # out_file.write(key + '<--->' + item + '\n')
+                out_file.write(item + '\n')
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
     with open(input_file) as f:
         keywords = [x for x in f.read().split("\n") if x != ""]
 
-    for chunk in tqdm(
-        [keywords[x: x + concurrency]
-            for x in range(0, len(keywords), concurrency)]
-    ):
-        try:
-            for keyword in chunk:
-                scrape(keyword, loop=loop)
-
-        except Exception:
-            print("one failed")
-
-    loop.run_in_executor(executor, last_process)
-    loop.run_until_complete(asyncio.gather(*asyncio.all_tasks(loop)))
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for chunk in tqdm(
+            [keywords[x: x + concurrency]
+             for x in range(0, len(keywords), concurrency)]
+        ):
+            try:
+                loop = []
+                for keyword in chunk:
+                    loop.append(executor.submit(scraper, keyword))
+                [None for thread in concurrent.futures.as_completed(loop)]
+            except Exception:
+                print("one failed")
+    last_process()
